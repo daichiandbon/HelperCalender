@@ -1,10 +1,10 @@
 {
   "theme": {
-    "pageBgA": "#0b0f14",
-    "pageBgB": "#000000",
+    "pageBgA": "#e3e3e3",
+    "pageBgB": "#e8e8e8",
     "text": "#e5e7eb",
     "border": "#1f2937",
-    "today": "#c875ff",
+    "today": "#75ffd1",
     "todayAlpha": 35,
     "eventText": "#ffffff",
     "bg": "#0b0f14",
@@ -13,25 +13,18 @@
     "altB": "#ffffff"
   },
   "calendars": {
-    "bonbonbon0105@gmail.com": {
-      "visible": true,
-      "showTitle": true,
-      "showTime": true,
-      "color": "#8724eb",
-      "label": "予定あり"
-    },
-    "sugimoto@shirogumi.co.jp": {
-      "visible": true,
-      "showTitle": true,
-      "showTime": true,
-      "color": "#2563eb",
-      "label": "予定あり"
-    },
     "q5iptcp4jeta8irgvoqtf8n5ng@group.calendar.google.com": {
       "visible": true,
       "showTitle": true,
       "showTime": true,
-      "color": "#687287",
+      "color": "#5f8be3",
+      "label": "予定あり"
+    },
+    "u0dm4646p2nrc4ms7k58jmut4s@group.calendar.google.com": {
+      "visible": true,
+      "showTitle": true,
+      "showTime": true,
+      "color": "#26a691",
       "label": "予定あり"
     }
   }
