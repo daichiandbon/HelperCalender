@@ -1,12 +1,12 @@
 {
   "theme": {
-    "pageBgA": "#e3e3e3",
-    "pageBgB": "#e8e8e8",
-    "text": "#e5e7eb",
-    "border": "#1f2937",
-    "today": "#75ffd1",
-    "todayAlpha": 35,
+    "pageBgA": "#e8e8e8",
+    "pageBgB": "#e6e6e6",
+    "border": "#a0b1ca",
+    "today": "#84c0e6",
+    "todayAlpha": 100,
     "eventText": "#ffffff",
+    "text": "#e5e7eb",
     "bg": "#0b0f14",
     "panel": "#111827",
     "altA": "#ffffff",
@@ -21,14 +21,14 @@
       "visible": true,
       "showTitle": true,
       "showTime": true,
-      "color": "#5f8be3",
+      "color": "#85a1d5",
       "label": "予定あり"
     },
     "u0dm4646p2nrc4ms7k58jmut4s@group.calendar.google.com": {
       "visible": true,
       "showTitle": true,
       "showTime": true,
-      "color": "#26a691",
+      "color": "#62b7a9",
       "label": "予定あり"
     }
   }
