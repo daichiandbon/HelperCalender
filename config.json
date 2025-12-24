@@ -12,6 +12,10 @@
     "altA": "#ffffff",
     "altB": "#ffffff"
   },
+  "view": {
+    "slotMin": "10:30:00",
+    "slotMax": "23:30:00"
+  },
   "calendars": {
     "q5iptcp4jeta8irgvoqtf8n5ng@group.calendar.google.com": {
       "visible": true,
