@@ -13,7 +13,6 @@
 
   <style>
     :root{
-      /* このへんは起動時にJSで背景A/Bから自動生成して上書きする */
       --bg:#0b0f14;
       --panel:#111827;
       --panel2:#0f172a;
@@ -22,19 +21,18 @@
       --border:#1f2937;
       --btn:#1f2937;
 
-      /* FullCalendar vars（これもJSで上書きされる） */
-      --fc-page-bg-color:#ffffff;          /* 互換用（使わない） */
-      --fc-page-bg-color-a:#0b0f14;        /* 背景A */
-      --fc-page-bg-color-b:#0e1420;        /* 背景B */
+      --fc-page-bg-color:#ffffff;
+      --fc-page-bg-color-a:#0b0f14;
+      --fc-page-bg-color-b:#0e1420;
       --fc-neutral-bg-color:#0b0f14;
       --fc-neutral-text-color:#e5e7eb;
       --fc-border-color:#1f2937;
       --fc-today-bg-color:rgba(255,220,40,.35);
 
-      /* ★イベント文字色は設定で決める（反対色にはしない） */
+      /* イベント文字色は設定で */
       --fc-event-text-color:#ffffff;
 
-      /* ★イベント枠線は背景Aと同じ色（JSで上書き） */
+      /* イベント枠線（JSで背景Aに合わせる） */
       --fc-event-border-color:#0b0f14;
     }
 
@@ -71,7 +69,7 @@
     }
     .drawer.open{transform:translateX(0);}
 
-    /* メイン（縦追従：重要） */
+    /* メイン：縦追従 */
     .main{
       height:100vh;
       padding:10px;
@@ -86,7 +84,7 @@
       background:transparent !important;
     }
 
-    /* FullCalendar内部の縮み＆スクロール（重要） */
+    /* FullCalendar内部の縮み＆スクロール */
     .fc,
     .fc .fc-view-harness,
     .fc .fc-scroller-harness,
@@ -189,7 +187,7 @@
     }
     .fc .fc-button{color:#fff !important;}
 
-    /* ★イベント文字色：設定のeventTextが反映される */
+    /* イベント文字色 */
     .fc .fc-event{
       color:var(--fc-event-text-color) !important;
     }
@@ -219,7 +217,7 @@
       background:transparent !important;
     }
 
-    /* ★イベント枠線：背景Aと同じ色（透明じゃない） */
+    /* イベント枠線：背景Aと同色 */
     .fc .fc-event,
     .fc .fc-event-main,
     .fc .fc-event-selected,
@@ -233,11 +231,67 @@
 
     .collapsibleBody{display:none; margin-top:10px;}
     .collapsibleBody.on{display:block;}
+
+    /* ===================== クリック表示モーダル ===================== */
+    .evOverlay{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.55);
+      z-index:9999;
+      display:none;
+    }
+    .evOverlay.on{display:block;}
+    .evModal{
+      position:fixed;
+      z-index:10000;
+      left:50%; top:50%;
+      transform:translate(-50%,-50%);
+      width:min(520px, calc(100vw - 24px));
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:linear-gradient(180deg,var(--panel),var(--panel2));
+      padding:14px;
+      box-sizing:border-box;
+      display:none;
+    }
+    .evModal.on{display:block;}
+    .evTop{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .evTitle{
+      font-size:16px;
+      font-weight:700;
+      line-height:1.25;
+      word-break:break-word;
+      margin:0;
+    }
+    .evTime{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:6px;
+      white-space:pre-wrap;
+    }
   </style>
 </head>
 
 <body>
   <div class="overlay" id="overlay"></div>
+
+  <!-- クリック表示 -->
+  <div class="evOverlay" id="evOverlay"></div>
+  <div class="evModal" id="evModal" role="dialog" aria-modal="true">
+    <div class="evTop">
+      <div>
+        <div class="evTitle" id="evTitle">...</div>
+        <div class="evTime" id="evTime">...</div>
+      </div>
+      <button class="btn" id="evClose">閉じる</button>
+    </div>
+    <div class="small">※詳細ページには飛びません（クリック表示だけ）</div>
+  </div>
 
   <main class="main">
     <div id="calendar"></div>
@@ -295,12 +349,10 @@
         <div style="flex:1; min-width:160px;">
           <label>開始（上）</label><br>
           <input type="time" id="vMin">
-          <div class="small">例: 06:00</div>
         </div>
         <div style="flex:1; min-width:160px;">
           <label>終了（下）</label><br>
           <input type="time" id="vMax">
-          <div class="small">例: 24:00（無理なら 23:59）</div>
         </div>
       </div>
     </div>
@@ -358,7 +410,6 @@
 
       <div class="collapsibleBody" id="addBody">
         <div class="hr"></div>
-
         <div class="small">Googleカレンダーの「カレンダーID」を貼る</div>
         <div style="height:6px;"></div>
 
@@ -404,13 +455,11 @@
   // =======================
 
   const CONFIG_URL = "./config.json";
-
   const LS_OVERRIDE_KEY = "mycalendar.overrides.v1";
   const LS_DRAWER_KEY   = "mycalendar.drawer.open";
   const LS_ADDOPEN_KEY  = "mycalendar.add.open";
 
   const PAGE_DEFAULT_VIEW = { slotMin: "06:00:00", slotMax: "24:00:00" };
-
   const PAGE_DEFAULT_THEME = {
     pageBgA: "#0b0f14",
     pageBgB: "#0e1420",
@@ -510,7 +559,6 @@
     return out;
   }
 
-  // ★背景A/BからUI色を自動生成 + textは反対色（ただしイベント文字は手動）
   function applyThemeToRoot(theme) {
     const root = document.documentElement.style;
 
@@ -524,10 +572,10 @@
       rgbaFromHex(theme.today, Math.max(0, Math.min(1, theme.todayAlpha / 100)))
     );
 
-    // ★イベント文字色：設定で決める
+    // イベント文字色（設定で）
     root.setProperty("--fc-event-text-color", theme.eventText);
 
-    // ★イベント枠線：背景Aと同じ
+    // イベント枠線：背景Aと同色
     root.setProperty("--fc-event-border-color", theme.pageBgA);
 
     // UI自動生成
@@ -543,14 +591,14 @@
     root.setProperty("--border", border);
     root.setProperty("--btn", btn);
 
-    // ★textは背景Aと反対色（自動）
+    // textは背景Aの反対
     const textAuto = bestTextOn(theme.pageBgA);
     root.setProperty("--text", textAuto);
 
     const muted = mixHex(textAuto, theme.pageBgA, 0.55);
     root.setProperty("--muted", muted);
 
-    // FullCalendarの軸や見出し文字色もこれに寄せる（イベント文字は別）
+    // 軸などの文字色（イベント文字は別）
     root.setProperty("--fc-neutral-text-color", textAuto);
   }
 
@@ -634,6 +682,34 @@
     }
   }
 
+  // ===== クリック表示 =====
+  function fmt2(n){ return String(n).padStart(2,"0"); }
+  function formatTimeRange(start, end, allDay){
+    if (allDay) return "終日";
+    if (!start && !end) return "";
+    if (start && !end) return `${fmt2(start.getHours())}:${fmt2(start.getMinutes())}`;
+    if (start && end) return `${fmt2(start.getHours())}:${fmt2(start.getMinutes())} 〜 ${fmt2(end.getHours())}:${fmt2(end.getMinutes())}`;
+    return "";
+  }
+  function getDisplayTitle(event, cfg){
+    if (!cfg) return event.title || "";
+    if (cfg.showTitle === false) {
+      const label = (cfg.label ?? "予定あり").trim();
+      return label || "予定あり";
+    }
+    return (event.title || "").trim() || "(無題)";
+  }
+  function openEventPopup({ title, timeText }){
+    $("evTitle").textContent = title;
+    $("evTime").textContent = timeText;
+    $("evOverlay").classList.add("on");
+    $("evModal").classList.add("on");
+  }
+  function closeEventPopup(){
+    $("evOverlay").classList.remove("on");
+    $("evModal").classList.remove("on");
+  }
+
   function rebuildCalendar() {
     recomputeEffective();
     applyThemeToRoot(effective.theme);
@@ -670,6 +746,20 @@
 
       googleCalendarApiKey: GOOGLE_API_KEY,
       eventSources: makeEventSources(effective.calendars),
+
+      // ★ここが本題：クリック挙動
+      eventClick: (info) => {
+        // Googleカレンダー詳細へ飛ぶのを止める
+        info.jsEvent.preventDefault();
+
+        const calId = info.event.source?.id;
+        const cfg = effective.calendars?.[calId];
+
+        const title = getDisplayTitle(info.event, cfg);
+        const timeText = formatTimeRange(info.event.start, info.event.end, info.event.allDay);
+
+        openEventPopup({ title, timeText });
+      },
 
       eventDidMount: (info) => {
         const calId = info.event.source?.id;
@@ -903,15 +993,23 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    // drawer
     $("btnClose").addEventListener("click", () => setDrawer(false));
     $("overlay").addEventListener("click", () => setDrawer(false));
+
+    // event popup
+    $("evOverlay").addEventListener("click", closeEventPopup);
+    $("evClose").addEventListener("click", closeEventPopup);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeEventPopup();
+    });
 
     $("btnToggleAdd").addEventListener("click", () => {
       const open = !$("addBody").classList.contains("on");
       setAddOpen(open);
     });
 
-    // view（時刻範囲）
+    // view range
     $("vMin").addEventListener("change", (e) => {
       const hhmmss = toHHMMSSFromTimeInput(e.target.value);
       if (!hhmmss) return;
@@ -931,7 +1029,7 @@
       renderCalendarList();
     });
 
-    // theme（UI色は背景から自動生成、操作できるのは背景A/B・罫線・今日・イベント文字）
+    // theme
     $("tBgA").addEventListener("input", (e) => setThemeOverride("pageBgA", e.target.value));
     $("tBgB").addEventListener("input", (e) => setThemeOverride("pageBgB", e.target.value));
     $("tBorder").addEventListener("input", (e) => setThemeOverride("border", e.target.value));
