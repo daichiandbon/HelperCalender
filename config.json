@@ -1,7 +1,7 @@
 {
   "theme": {
-    "pageBgA": "#e8e8e8",
-    "pageBgB": "#e6e6e6",
+    "pageBgA": "#ffffff",
+    "pageBgB": "#f0f0f0",
     "border": "#a0b1ca",
     "today": "#84c0e6",
     "todayAlpha": 100,
@@ -15,6 +15,10 @@
   "view": {
     "slotMin": "10:30:00",
     "slotMax": "23:30:00"
+  },
+  "nav": {
+    "viewMode": "timeGridWeek",
+    "weekdayLang": "ja"
   },
   "calendars": {
     "q5iptcp4jeta8irgvoqtf8n5ng@group.calendar.google.com": {
