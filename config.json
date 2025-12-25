@@ -5,7 +5,7 @@
     "border": "#a0b1ca",
     "today": "#84c0e6",
     "todayAlpha": 100,
-    "eventText": "#ffffff",
+    "eventText": "#000000",
     "text": "#e5e7eb",
     "bg": "#0b0f14",
     "panel": "#111827",
