@@ -13,6 +13,7 @@
 
   <style>
     :root{
+      /* このへんは起動時にJSで背景A/Bから自動生成して上書きする */
       --bg:#0b0f14;
       --panel:#111827;
       --panel2:#0f172a;
@@ -21,18 +22,19 @@
       --border:#1f2937;
       --btn:#1f2937;
 
-      --fc-page-bg-color:#ffffff;
-      --fc-page-bg-color-a:#0b0f14;
-      --fc-page-bg-color-b:#0e1420;
+      /* FullCalendar vars（これもJSで上書きされる） */
+      --fc-page-bg-color:#ffffff;          /* 互換用（使わない） */
+      --fc-page-bg-color-a:#0b0f14;        /* 背景A */
+      --fc-page-bg-color-b:#0e1420;        /* 背景B */
       --fc-neutral-bg-color:#0b0f14;
       --fc-neutral-text-color:#e5e7eb;
       --fc-border-color:#1f2937;
       --fc-today-bg-color:rgba(255,220,40,.35);
 
-      /* イベント文字色は設定で */
+      /* ★イベント文字色は設定で決める（反対色にはしない） */
       --fc-event-text-color:#ffffff;
 
-      /* イベント枠線（JSで背景Aに合わせる） */
+      /* ★イベント枠線は背景Aと同じ色（JSで上書き） */
       --fc-event-border-color:#0b0f14;
     }
 
@@ -44,6 +46,7 @@
       color:var(--text);
     }
 
+    /* Drawer用 overlay */
     .overlay{
       position:fixed; inset:0;
       background:rgba(0,0,0,.35);
@@ -69,7 +72,72 @@
     }
     .drawer.open{transform:translateX(0);}
 
-    /* メイン：縦追従 */
+    /* ===== クリック拡大表示（モーダル） ===== */
+    .eventOverlay{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.55);
+      z-index:10050;
+      display:none;
+    }
+    .eventOverlay.on{display:block;}
+
+    .eventModal{
+      position:fixed;
+      left:50%; top:50%;
+      transform:translate(-50%,-50%);
+      width:min(680px, calc(100vw - 28px));
+      border:1px solid var(--border);
+      border-radius:18px;
+      background:linear-gradient(180deg,var(--panel),var(--panel2));
+      box-shadow:0 10px 30px rgba(0,0,0,.45);
+      padding:18px 18px 16px;
+      box-sizing:border-box;
+      z-index:10051;
+      display:none;
+    }
+    .eventModal.on{display:block;}
+
+    .eventModalTop{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .eventModalClose{
+      border:1px solid var(--border);
+      background:transparent;
+      color:var(--text);
+      border-radius:12px;
+      cursor:pointer;
+      font-size:12px;
+      padding:6px 10px;
+    }
+    .eventModalClose:hover{filter:brightness(1.1);}
+
+    .eventModalTime{
+      font-size:22px;
+      font-weight:800;
+      letter-spacing:.02em;
+      color:var(--text);
+      margin:4px 0 8px;
+      line-height:1.1;
+    }
+    .eventModalTitle{
+      font-size:34px;
+      font-weight:900;
+      line-height:1.15;
+      word-break:break-word;
+      color:var(--text);
+    }
+    .eventModalSub{
+      margin-top:12px;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.35;
+    }
+
+    /* メイン（縦追従：重要） */
     .main{
       height:100vh;
       padding:10px;
@@ -84,7 +152,7 @@
       background:transparent !important;
     }
 
-    /* FullCalendar内部の縮み＆スクロール */
+    /* FullCalendar内部の縮み＆スクロール（重要） */
     .fc,
     .fc .fc-view-harness,
     .fc .fc-scroller-harness,
@@ -107,7 +175,7 @@
     .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
     .hr{height:1px; background:var(--border); margin:10px 0;}
     label{font-size:12px; color:var(--muted);}
-    input[type="text"], textarea{
+    input[type="text"], textarea, select{
       width:100%;
       background:#0b1220;
       border:1px solid var(--border);
@@ -179,15 +247,18 @@
     .fc-theme-standard .fc-scrollgrid{
       border-color:var(--fc-border-color) !important;
     }
-    .fc .fc-toolbar-title,
+
+    /* ====== ツールバー全部隠す + タイトルも消す ====== */
+    .fc .fc-header-toolbar{ display:none !important; } /* prev/next/today/week/month等ぜんぶ */
+    /* タイトル行そのものが消えるので、中央タイトルも当然消える */
+
     .fc .fc-col-header-cell-cushion,
     .fc .fc-timegrid-axis-cushion,
     .fc .fc-timegrid-slot-label-cushion{
       color:var(--fc-neutral-text-color) !important;
     }
-    .fc .fc-button{color:#fff !important;}
 
-    /* イベント文字色 */
+    /* ★イベント文字色：設定のeventTextが反映される */
     .fc .fc-event{
       color:var(--fc-event-text-color) !important;
     }
@@ -217,7 +288,7 @@
       background:transparent !important;
     }
 
-    /* イベント枠線：背景Aと同色 */
+    /* ★イベント枠線：背景Aと同じ色（透明じゃない） */
     .fc .fc-event,
     .fc .fc-event-main,
     .fc .fc-event-selected,
@@ -231,69 +302,23 @@
 
     .collapsibleBody{display:none; margin-top:10px;}
     .collapsibleBody.on{display:block;}
-
-    /* ===================== クリック表示モーダル ===================== */
-    .evOverlay{
-      position:fixed; inset:0;
-      background:rgba(0,0,0,.55);
-      z-index:9999;
-      display:none;
-    }
-    .evOverlay.on{display:block;}
-    .evModal{
-      position:fixed;
-      z-index:10000;
-      left:50%; top:50%;
-      transform:translate(-50%,-50%);
-      width:min(640px, calc(100vw - 24px));
-      border:1px solid var(--border);
-      border-radius:14px;
-      background:linear-gradient(180deg,var(--panel),var(--panel2));
-      padding:18px;
-      box-sizing:border-box;
-      display:none;
-    }
-    .evModal.on{display:block;}
-    .evTop{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:10px;
-      margin-bottom:8px;
-    }
-    .evTitle{
-  font-size:28px;
-  font-weight:800;
-  line-height:1.2;
-  letter-spacing:0.2px;
-  word-break:break-word;
-  margin:0;
-}
-
-.evTime{
-  font-size:18px;
-  font-weight:700;
-  color:var(--text);
-  margin-top:10px;
-  white-space:pre-wrap;
-}
-
   </style>
 </head>
 
 <body>
+  <!-- Drawer用 -->
   <div class="overlay" id="overlay"></div>
 
-  <!-- クリック表示 -->
-  <div class="evOverlay" id="evOverlay"></div>
-  <div class="evModal" id="evModal" role="dialog" aria-modal="true">
-    <div class="evTop">
-      <div>
-        <div class="evTitle" id="evTitle">...</div>
-        <div class="evTime" id="evTime">...</div>
-      </div>
-      <button class="btn" id="evClose">閉じる</button>
+  <!-- クリック拡大表示用 -->
+  <div class="eventOverlay" id="eventOverlay"></div>
+  <div class="eventModal" id="eventModal" aria-hidden="true">
+    <div class="eventModalTop">
+      <div class="small">予定</div>
+      <button class="eventModalClose" id="eventCloseBtn">閉じる（Esc）</button>
     </div>
+    <div class="eventModalTime" id="eventModalTime">--:--</div>
+    <div class="eventModalTitle" id="eventModalTitle">タイトル</div>
+    <div class="eventModalSub" id="eventModalSub"></div>
   </div>
 
   <main class="main">
@@ -317,6 +342,39 @@
       <div class="row" style="justify-content:space-between;">
         <button class="btn" id="btnReloadConfig">config.json 再読込</button>
         <button class="btn bad" id="btnClearOverrides">ローカル差分を消す</button>
+      </div>
+    </div>
+
+    <!-- ★ここ追加：ナビ設定 -->
+    <div class="card">
+      <div>
+        <div style="font-size:13px;">ナビ / 表示</div>
+        <div class="small">週・月の切替 / 今日へ / 曜日言語</div>
+      </div>
+      <div class="hr"></div>
+
+      <div class="row" style="justify-content:space-between;">
+        <button class="btn" id="btnGoPrev">← 前</button>
+        <button class="btn" id="btnGoToday">今日</button>
+        <button class="btn" id="btnGoNext">次 →</button>
+      </div>
+
+      <div class="row" style="justify-content:space-between; margin-top:10px;">
+        <div style="flex:1; min-width:160px;">
+          <label>表示</label><br>
+          <select id="viewMode">
+            <option value="timeGridWeek">Week</option>
+            <option value="dayGridMonth">Month</option>
+          </select>
+        </div>
+
+        <div style="flex:1; min-width:160px;">
+          <label>曜日の言語</label><br>
+          <select id="weekdayLang">
+            <option value="ja">日本語</option>
+            <option value="en">English</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -352,10 +410,12 @@
         <div style="flex:1; min-width:160px;">
           <label>開始（上）</label><br>
           <input type="time" id="vMin">
+          <div class="small">例: 06:00</div>
         </div>
         <div style="flex:1; min-width:160px;">
           <label>終了（下）</label><br>
           <input type="time" id="vMax">
+          <div class="small">例: 24:00（無理なら 23:59）</div>
         </div>
       </div>
     </div>
@@ -413,6 +473,7 @@
 
       <div class="collapsibleBody" id="addBody">
         <div class="hr"></div>
+
         <div class="small">Googleカレンダーの「カレンダーID」を貼る</div>
         <div style="height:6px;"></div>
 
@@ -458,11 +519,16 @@
   // =======================
 
   const CONFIG_URL = "./config.json";
+
   const LS_OVERRIDE_KEY = "mycalendar.overrides.v1";
   const LS_DRAWER_KEY   = "mycalendar.drawer.open";
   const LS_ADDOPEN_KEY  = "mycalendar.add.open";
 
+  // ★追加：表示/言語の保存
+  const LS_NAV_KEY = "mycalendar.nav.v1";
+
   const PAGE_DEFAULT_VIEW = { slotMin: "06:00:00", slotMax: "24:00:00" };
+
   const PAGE_DEFAULT_THEME = {
     pageBgA: "#0b0f14",
     pageBgB: "#0e1420",
@@ -475,6 +541,25 @@
   const $ = (id) => document.getElementById(id);
   const clone = (obj) => structuredClone(obj);
   const isObj = (x) => x && typeof x === "object" && !Array.isArray(x);
+
+  // ===== ナビ設定（Week/Month + 言語） =====
+  function loadNavFromLS(){
+    try{
+      const raw = localStorage.getItem(LS_NAV_KEY);
+      if(!raw) return { viewMode:"timeGridWeek", weekdayLang:"ja" };
+      const o = JSON.parse(raw);
+      return {
+        viewMode: (o.viewMode === "dayGridMonth" ? "dayGridMonth" : "timeGridWeek"),
+        weekdayLang: (o.weekdayLang === "en" ? "en" : "ja"),
+      };
+    }catch{
+      return { viewMode:"timeGridWeek", weekdayLang:"ja" };
+    }
+  }
+  function saveNavToLS(nav){
+    localStorage.setItem(LS_NAV_KEY, JSON.stringify(nav));
+  }
+  let nav = loadNavFromLS();
 
   function toHHMMSSFromTimeInput(v){
     const s = (v || "").trim();
@@ -562,6 +647,7 @@
     return out;
   }
 
+  // ★背景A/BからUI色を自動生成 + textは反対色（ただしイベント文字は手動）
   function applyThemeToRoot(theme) {
     const root = document.documentElement.style;
 
@@ -575,10 +661,10 @@
       rgbaFromHex(theme.today, Math.max(0, Math.min(1, theme.todayAlpha / 100)))
     );
 
-    // イベント文字色（設定で）
+    // ★イベント文字色：設定で決める
     root.setProperty("--fc-event-text-color", theme.eventText);
 
-    // イベント枠線：背景Aと同色
+    // ★イベント枠線：背景Aと同じ
     root.setProperty("--fc-event-border-color", theme.pageBgA);
 
     // UI自動生成
@@ -594,14 +680,14 @@
     root.setProperty("--border", border);
     root.setProperty("--btn", btn);
 
-    // textは背景Aの反対
+    // ★textは背景Aと反対色（自動）
     const textAuto = bestTextOn(theme.pageBgA);
     root.setProperty("--text", textAuto);
 
     const muted = mixHex(textAuto, theme.pageBgA, 0.55);
     root.setProperty("--muted", muted);
 
-    // 軸などの文字色（イベント文字は別）
+    // FullCalendarの軸や見出し文字色もこれに寄せる（イベント文字は別）
     root.setProperty("--fc-neutral-text-color", textAuto);
   }
 
@@ -613,6 +699,30 @@
         googleCalendarId: calendarId,
         color: c.color || undefined
       }));
+  }
+
+  // ===== クリック拡大表示（モーダル） =====
+  function formatHm(d){
+    if (!(d instanceof Date) || isNaN(d.getTime())) return "";
+    const h = String(d.getHours()).padStart(2,"0");
+    const m = String(d.getMinutes()).padStart(2,"0");
+    return `${h}:${m}`;
+  }
+
+  function openEventModal({ timeText, titleText, subText }){
+    $("eventModalTime").textContent = timeText || "";
+    $("eventModalTitle").textContent = titleText || "";
+    $("eventModalSub").textContent = subText || "";
+
+    $("eventOverlay").classList.add("on");
+    $("eventModal").classList.add("on");
+    $("eventModal").setAttribute("aria-hidden", "false");
+  }
+
+  function closeEventModal(){
+    $("eventOverlay").classList.remove("on");
+    $("eventModal").classList.remove("on");
+    $("eventModal").setAttribute("aria-hidden", "true");
   }
 
   // state
@@ -685,34 +795,6 @@
     }
   }
 
-  // ===== クリック表示 =====
-  function fmt2(n){ return String(n).padStart(2,"0"); }
-  function formatTimeRange(start, end, allDay){
-    if (allDay) return "終日";
-    if (!start && !end) return "";
-    if (start && !end) return `${fmt2(start.getHours())}:${fmt2(start.getMinutes())}`;
-    if (start && end) return `${fmt2(start.getHours())}:${fmt2(start.getMinutes())} 〜 ${fmt2(end.getHours())}:${fmt2(end.getMinutes())}`;
-    return "";
-  }
-  function getDisplayTitle(event, cfg){
-    if (!cfg) return event.title || "";
-    if (cfg.showTitle === false) {
-      const label = (cfg.label ?? "予定あり").trim();
-      return label || "予定あり";
-    }
-    return (event.title || "").trim() || "(無題)";
-  }
-  function openEventPopup({ title, timeText }){
-    $("evTitle").textContent = title;
-    $("evTime").textContent = timeText;
-    $("evOverlay").classList.add("on");
-    $("evModal").classList.add("on");
-  }
-  function closeEventPopup(){
-    $("evOverlay").classList.remove("on");
-    $("evModal").classList.remove("on");
-  }
-
   function rebuildCalendar() {
     recomputeEffective();
     applyThemeToRoot(effective.theme);
@@ -725,20 +807,19 @@
       calendar = null;
     }
 
+    const locale = (nav.weekdayLang === "ja") ? "ja" : "en";
+
     calendar = new FullCalendar.Calendar(el, {
       firstDay: 1,
-      initialView: "timeGridWeek",
-      customButtons: {
-        settings: {
-          text: "⚙",
-          click: () => setDrawer(!$("drawer").classList.contains("open")),
-        }
-      },
-      headerToolbar: {
-        left: "prev,next today",
-        center: "title",
-        right: "settings timeGridWeek,dayGridMonth",
-      },
+
+      // ★初期ビューを設定の値で
+      initialView: nav.viewMode,
+
+      // ★ヘッダーは空（CSSでも隠してるが、そもそも生成しない）
+      headerToolbar: false,
+
+      // ★曜日などの表示言語
+      locale,
 
       nowIndicator: true,
       height: "100%",
@@ -749,20 +830,6 @@
 
       googleCalendarApiKey: GOOGLE_API_KEY,
       eventSources: makeEventSources(effective.calendars),
-
-      // ★ここが本題：クリック挙動
-      eventClick: (info) => {
-        // Googleカレンダー詳細へ飛ぶのを止める
-        info.jsEvent.preventDefault();
-
-        const calId = info.event.source?.id;
-        const cfg = effective.calendars?.[calId];
-
-        const title = getDisplayTitle(info.event, cfg);
-        const timeText = formatTimeRange(info.event.start, info.event.end, info.event.allDay);
-
-        openEventPopup({ title, timeText });
-      },
 
       eventDidMount: (info) => {
         const calId = info.event.source?.id;
@@ -801,6 +868,45 @@
         }
       },
 
+      // ★クリック挙動：詳細ページに飛ばさず、拡大表示だけ
+      eventClick: (info) => {
+        info.jsEvent.preventDefault();
+        info.jsEvent.stopPropagation();
+
+        const calId = info.event.source?.id;
+        const cfg = effective.calendars?.[calId] || {};
+
+        const titleText = (cfg.showTitle === false)
+          ? String((cfg.label ?? "予定あり")).trim()
+          : String((info.event.title ?? "")).trim();
+
+        let timeText = "";
+        if (info.event.allDay) {
+          timeText = (nav.weekdayLang === "ja") ? "終日" : "All day";
+        } else {
+          const s = info.event.start;
+          const e = info.event.end;
+          const sh = formatHm(s);
+          const eh = formatHm(e);
+          timeText = eh ? `${sh} – ${eh}` : sh;
+        }
+
+        let subText = "";
+        try {
+          const d = info.event.start || info.event.end;
+          if (d instanceof Date && !isNaN(d.getTime())) {
+            if (nav.weekdayLang === "ja") {
+              const w = ["日","月","火","水","木","金","土"][d.getDay()];
+              subText = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}（${w}）`;
+            } else {
+              subText = d.toLocaleDateString("en-US", { weekday:"short", year:"numeric", month:"2-digit", day:"2-digit" });
+            }
+          }
+        } catch {}
+
+        openEventModal({ timeText, titleText, subText });
+      },
+
       eventSourceFailure: (err) => {
         console.error("Google Calendar fetch failed:", err);
       }
@@ -828,6 +934,11 @@
   function syncViewUIFromEffective(){
     $("vMin").value = toHHMMFromHHMMSS(effective.view.slotMin);
     $("vMax").value = toHHMMFromHHMMSS(effective.view.slotMax);
+  }
+
+  function syncNavUI(){
+    $("viewMode").value = nav.viewMode;
+    $("weekdayLang").value = nav.weekdayLang;
   }
 
   function renderCalendarList() {
@@ -885,6 +996,7 @@
         rebuildCalendar();
         syncThemeUIFromEffective();
         syncViewUIFromEffective();
+        syncNavUI();
         renderCalendarList();
       }
 
@@ -929,6 +1041,7 @@
         rebuildCalendar();
         syncThemeUIFromEffective();
         syncViewUIFromEffective();
+        syncNavUI();
         renderCalendarList();
       });
 
@@ -947,6 +1060,7 @@
 
   function buildExportObject() {
     recomputeEffective();
+    // ★nav設定も一緒にエクスポートしたいならここで混ぜてもOK（今はlocalStorageのみ）
     return { theme: effective.theme, view: effective.view, calendars: effective.calendars };
   }
 
@@ -962,6 +1076,7 @@
     rebuildCalendar();
     syncThemeUIFromEffective();
     syncViewUIFromEffective();
+    syncNavUI();
     renderCalendarList();
   }
 
@@ -971,6 +1086,7 @@
     rebuildCalendar();
     syncThemeUIFromEffective();
     syncViewUIFromEffective();
+    syncNavUI();
     renderCalendarList();
   }
 
@@ -982,10 +1098,13 @@
 
   async function initAll() {
     overrides = loadOverridesFromLS();
+    nav = loadNavFromLS();
+
     await loadBaseConfigFromJson();
     rebuildCalendar();
     syncThemeUIFromEffective();
     syncViewUIFromEffective();
+    syncNavUI();
     renderCalendarList();
 
     setDrawer(localStorage.getItem(LS_DRAWER_KEY) === "1");
@@ -996,15 +1115,14 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    // drawer
     $("btnClose").addEventListener("click", () => setDrawer(false));
     $("overlay").addEventListener("click", () => setDrawer(false));
 
-    // event popup
-    $("evOverlay").addEventListener("click", closeEventPopup);
-    $("evClose").addEventListener("click", closeEventPopup);
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeEventPopup();
+    // 拡大表示モーダル：閉じる
+    $("eventOverlay").addEventListener("click", closeEventModal);
+    $("eventCloseBtn").addEventListener("click", closeEventModal);
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeEventModal();
     });
 
     $("btnToggleAdd").addEventListener("click", () => {
@@ -1012,7 +1130,30 @@
       setAddOpen(open);
     });
 
-    // view range
+    // ★ナビ：前/次/今日
+    $("btnGoPrev").addEventListener("click", () => calendar && calendar.prev());
+    $("btnGoNext").addEventListener("click", () => calendar && calendar.next());
+    $("btnGoToday").addEventListener("click", () => calendar && calendar.today());
+
+    // ★表示（Week/Month）切替（設定に保存）
+    $("viewMode").addEventListener("change", (e) => {
+      nav.viewMode = (e.target.value === "dayGridMonth") ? "dayGridMonth" : "timeGridWeek";
+      saveNavToLS(nav);
+      if (calendar) calendar.changeView(nav.viewMode);
+    });
+
+    // ★曜日言語切替（設定に保存）→ カレンダー作り直し（localeは再初期化が確実）
+    $("weekdayLang").addEventListener("change", (e) => {
+      nav.weekdayLang = (e.target.value === "en") ? "en" : "ja";
+      saveNavToLS(nav);
+      rebuildCalendar();
+      syncThemeUIFromEffective();
+      syncViewUIFromEffective();
+      syncNavUI();
+      renderCalendarList();
+    });
+
+    // view（時刻範囲）
     $("vMin").addEventListener("change", (e) => {
       const hhmmss = toHHMMSSFromTimeInput(e.target.value);
       if (!hhmmss) return;
@@ -1029,10 +1170,11 @@
       rebuildCalendar();
       syncThemeUIFromEffective();
       syncViewUIFromEffective();
+      syncNavUI();
       renderCalendarList();
     });
 
-    // theme
+    // theme（UI色は背景から自動生成、操作できるのは背景A/B・罫線・今日・イベント文字）
     $("tBgA").addEventListener("input", (e) => setThemeOverride("pageBgA", e.target.value));
     $("tBgB").addEventListener("input", (e) => setThemeOverride("pageBgB", e.target.value));
     $("tBorder").addEventListener("input", (e) => setThemeOverride("border", e.target.value));
@@ -1051,6 +1193,7 @@
       rebuildCalendar();
       syncThemeUIFromEffective();
       syncViewUIFromEffective();
+      syncNavUI();
       renderCalendarList();
     });
 
@@ -1072,6 +1215,7 @@
       rebuildCalendar();
       syncThemeUIFromEffective();
       syncViewUIFromEffective();
+      syncNavUI();
       renderCalendarList();
     });
 
@@ -1081,6 +1225,7 @@
       rebuildCalendar();
       syncThemeUIFromEffective();
       syncViewUIFromEffective();
+      syncNavUI();
       renderCalendarList();
 
       const hasLS = !!localStorage.getItem(LS_OVERRIDE_KEY);
@@ -1096,6 +1241,7 @@
       rebuildCalendar();
       syncThemeUIFromEffective();
       syncViewUIFromEffective();
+      syncNavUI();
       renderCalendarList();
 
       const base = $("statusLine").textContent.split(" / ")[0];
