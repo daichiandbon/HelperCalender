@@ -13,7 +13,7 @@
 
   <style>
     :root{
-      /* このへんは起動時にJSで背景A/Bから自動生成して上書きする */
+      /* 起動時にJSで背景A/Bから自動生成して上書きする */
       --bg:#0b0f14;
       --panel:#111827;
       --panel2:#0f172a;
@@ -22,7 +22,13 @@
       --border:#1f2937;
       --btn:#1f2937;
 
-      /* FullCalendar vars（これもJSで上書きされる） */
+      /* 追加：設定UIの入力背景（JSで背景Aに上書き） */
+      --input-bg:#0b1220;
+
+      /* 設定アイコン（SVG URLをJSで入れる） */
+      --settings-icon-url: none;
+
+      /* FullCalendar vars（JSで上書きされる） */
       --fc-page-bg-color:#ffffff;          /* 互換用（使わない） */
       --fc-page-bg-color-a:#0b0f14;        /* 背景A */
       --fc-page-bg-color-b:#0e1420;        /* 背景B */
@@ -174,9 +180,12 @@
     .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
     .hr{height:1px; background:var(--border); margin:10px 0;}
     label{font-size:12px; color:var(--muted);}
-    input[type="text"], textarea, select{
+
+    /* ★入力ボックス背景：背景Aに追従（JSで --input-bg を上書き） */
+    input[type="text"], textarea, select,
+    input[type="number"], input[type="time"]{
       width:100%;
-      background:#0b1220;
+      background:var(--input-bg);
       border:1px solid var(--border);
       color:var(--text);
       padding:8px 10px;
@@ -190,26 +199,8 @@
       font-size:12px;
     }
     input[type="color"]{width:46px; height:32px; border:none; background:transparent; padding:0;}
-    input[type="number"]{
-      width:120px;
-      background:#0b1220;
-      border:1px solid var(--border);
-      color:var(--text);
-      padding:6px 8px;
-      border-radius:10px;
-      outline:none;
-      box-sizing:border-box;
-    }
-    input[type="time"]{
-      width:140px;
-      background:#0b1220;
-      border:1px solid var(--border);
-      color:var(--text);
-      padding:6px 8px;
-      border-radius:10px;
-      outline:none;
-      box-sizing:border-box;
-    }
+    input[type="number"]{width:120px;}
+    input[type="time"]{width:140px;}
 
     .btn{
       background:var(--btn);
@@ -252,9 +243,8 @@
     .fc .fc-timegrid-slot-label-cushion{
       color:var(--fc-neutral-text-color) !important;
     }
-    .fc .fc-button{color:#fff !important;}
 
-    /* ★イベント文字色：設定のeventTextが反映される */
+    /* ★イベント文字色 */
     .fc .fc-event{
       color:var(--fc-event-text-color) !important;
     }
@@ -284,7 +274,7 @@
       background:transparent !important;
     }
 
-    /* ★イベント枠線：背景Aと同じ色（透明じゃない） */
+    /* ★イベント枠線：背景A */
     .fc .fc-event,
     .fc .fc-event-main,
     .fc .fc-event-selected,
@@ -299,27 +289,44 @@
     .collapsibleBody{display:none; margin-top:10px;}
     .collapsibleBody.on{display:block;}
 
-    /* ========= ここが今回の肝 ========= */
+    /* ========= ヘッダー周り：今回の肝 ========= */
 
-    /* ①中央タイトル（何日〜何日）を消す */
+    /* 中央タイトル（何日〜何日）を消す */
     .fc .fc-toolbar-title{ display:none !important; }
 
-    /* ②ヘッダーは「settings だけ」見せる
-          - toolbarは残す（settingsを置く場所）
-          - 左/中央チャンクは非表示
-          - 右チャンクでも settings 以外が居たら消す（保険） */
-    .fc .fc-toolbar-chunk:not(:last-child){ display:none !important; }
-    .fc .fc-toolbar-chunk:last-child .fc-button:not(.fc-settings-button){ display:none !important; }
+    /* ツールバーは残す（settingsを置くため） */
+    .fc .fc-header-toolbar{
+      margin:0 0 6px !important;
+      display:flex !important;
+      justify-content:flex-end !important; /* ★右寄せ強制 */
+    }
 
-    /* ③settingsボタンを目立たなく（背景Aと同色） */
+    /* left/center chunk を潰して右だけ残す */
+    .fc .fc-toolbar-chunk:not(:last-child){ display:none !important; }
+    .fc .fc-toolbar-chunk:last-child{
+      margin-left:auto !important; /* ★右上に押し込む保険 */
+      display:flex !important;
+      justify-content:flex-end !important;
+      width:auto !important;
+    }
+
+    /* 右チャンク内でも settings 以外を消す（保険） */
+    .fc .fc-toolbar-chunk:last-child .fc-button:not(.fc-settings-button){
+      display:none !important;
+    }
+
+    /* ★settingsボタンを目立たなく（背景Aと同色） */
     .fc .fc-settings-button{
       background: var(--fc-page-bg-color-a) !important;
       border-color: var(--fc-page-bg-color-a) !important;
-      color: var(--muted) !important;
+      color: transparent !important; /* テキスト消す */
       box-shadow:none !important;
-      opacity:.72;
+      opacity:.78;
       padding:6px 9px !important;
       border-radius:12px !important;
+      position:relative;
+      min-width:34px;
+      min-height:30px;
     }
     .fc .fc-settings-button:hover{
       opacity:.95;
@@ -327,6 +334,21 @@
     }
     .fc .fc-settings-button:focus{ box-shadow:none !important; }
 
+    /* SVGアイコン表示（背景画像として表示） */
+    .fc .fc-settings-button::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      margin:auto;
+      width:18px;
+      height:18px;
+      background-image: var(--settings-icon-url);
+      background-repeat:no-repeat;
+      background-position:center;
+      background-size:contain;
+      opacity:.95;
+      pointer-events:none;
+    }
   </style>
 </head>
 
@@ -542,6 +564,10 @@
   const GOOGLE_API_KEY = "AIzaSyDZdH26P0tSEBRNnEa4rE9As7rcd924QJ4";
   // =======================
 
+  // ★ここにGitHubのSVG (raw URL) を入れる
+  // 例: "https://raw.githubusercontent.com/USER/REPO/main/settings.svg"
+  const SETTINGS_ICON_URL = "https://raw.githubusercontent.com/daichiandbon/HelperCalender/refs/heads/main/setting.svg";
+
   const CONFIG_URL = "./config.json";
 
   const LS_OVERRIDE_KEY = "mycalendar.overrides.v1";
@@ -670,7 +696,7 @@
     return out;
   }
 
-  // 背景A/BからUI色を自動生成 + textは反対色（ただしイベント文字は手動）
+  // ★背景A/BからUI色を自動生成 + textは反対色（ただしイベント文字は手動）
   function applyThemeToRoot(theme) {
     const root = document.documentElement.style;
 
@@ -700,12 +726,25 @@
     root.setProperty("--border", border);
     root.setProperty("--btn", btn);
 
+    // ★入力ボックス背景を「背景A」に合わせる
+    root.setProperty("--input-bg", theme.pageBgA);
+
+    // ★SVGアイコンURL（GitHub raw）
+    // CSS background-image用に url("...") 形式で入れる
+    if (SETTINGS_ICON_URL && SETTINGS_ICON_URL.includes("://")) {
+      root.setProperty("--settings-icon-url", `url("${SETTINGS_ICON_URL}")`);
+    } else {
+      root.setProperty("--settings-icon-url", "none");
+    }
+
+    // ★textは背景Aと反対色（自動）
     const textAuto = bestTextOn(theme.pageBgA);
     root.setProperty("--text", textAuto);
 
     const muted = mixHex(textAuto, theme.pageBgA, 0.55);
     root.setProperty("--muted", muted);
 
+    // FullCalendarの軸や見出し文字色もこれに寄せる（イベント文字は別）
     root.setProperty("--fc-neutral-text-color", textAuto);
   }
 
@@ -829,15 +868,16 @@
       initialView: nav.viewMode,
       locale,
 
-      // ★ヘッダーは「settings」だけ置く（表示はCSSで絞る）
+      // ★ヘッダーは settings だけ置く（右上固定）
       headerToolbar: {
         left: "",
-        center: "title", // titleはCSSで消す（toolbarの高さ維持用）
+        center: "title",   // titleはCSSで消す（高さ維持）
         right: "settings",
       },
       customButtons: {
         settings: {
-          text: "⚙",
+          // テキストは見せない（CSSで透明化）
+          text: "settings",
           click: () => setDrawer(!$("drawer").classList.contains("open")),
         }
       },
