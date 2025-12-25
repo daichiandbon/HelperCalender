@@ -19,7 +19,10 @@
       --panel2:#0f172a;
       --text:#e5e7eb;
       --muted:#94a3b8;
+
+      /* ★枠線（JSで textAuto と同じ＝背景の反対色に上書き） */
       --border:#1f2937;
+
       --btn:#1f2937;
 
       /* 追加：設定UIの入力背景（JSで背景Aに上書き） */
@@ -34,7 +37,10 @@
       --fc-page-bg-color-b:#0e1420;        /* 背景B */
       --fc-neutral-bg-color:#0b0f14;
       --fc-neutral-text-color:#e5e7eb;
+
+      /* ★罫線色（JSで textAuto と同じ＝背景の反対色に上書き） */
       --fc-border-color:#1f2937;
+
       --fc-today-bg-color:rgba(255,220,40,.35);
 
       /* ★イベント文字色は設定で決める（反対色にはしない） */
@@ -289,7 +295,7 @@
     .collapsibleBody{display:none; margin-top:10px;}
     .collapsibleBody.on{display:block;}
 
-    /* ========= ヘッダー周り：今回の肝 ========= */
+    /* ========= ヘッダー周り ========= */
 
     /* 中央タイトル（何日〜何日）を消す */
     .fc .fc-toolbar-title{ display:none !important; }
@@ -334,7 +340,7 @@
     }
     .fc .fc-settings-button:focus{ box-shadow:none !important; }
 
-    /* SVGアイコン表示（背景画像として表示） */
+    /* SVGアイコン表示（background-image） */
     .fc .fc-settings-button::before{
       content:"";
       position:absolute;
@@ -704,7 +710,6 @@
     root.setProperty("--fc-page-bg-color-a", theme.pageBgA);
     root.setProperty("--fc-page-bg-color-b", theme.pageBgB);
     root.setProperty("--fc-neutral-bg-color", theme.pageBgA);
-    root.setProperty("--fc-border-color", theme.border);
 
     root.setProperty("--fc-today-bg-color",
       rgbaFromHex(theme.today, Math.max(0, Math.min(1, theme.todayAlpha / 100)))
@@ -721,16 +726,10 @@
     root.setProperty("--panel", panel);
     root.setProperty("--panel2", panel2);
 
-    const border = mixHex(panel, "#000000", 0.25);
-    const btn    = mixHex(panel2, "#000000", 0.15);
-    root.setProperty("--border", border);
-    root.setProperty("--btn", btn);
-
     // ★入力ボックス背景を「背景A」に合わせる
     root.setProperty("--input-bg", theme.pageBgA);
 
     // ★SVGアイコンURL（GitHub raw）
-    // CSS background-image用に url("...") 形式で入れる
     if (SETTINGS_ICON_URL && SETTINGS_ICON_URL.includes("://")) {
       root.setProperty("--settings-icon-url", `url("${SETTINGS_ICON_URL}")`);
     } else {
@@ -743,6 +742,14 @@
 
     const muted = mixHex(textAuto, theme.pageBgA, 0.55);
     root.setProperty("--muted", muted);
+
+    // ★枠線は「文字と同じ」＝背景Aの反対色でクッキリ
+    root.setProperty("--border", textAuto);
+    root.setProperty("--fc-border-color", textAuto);
+
+    // ボタン背景は今まで通り（枠線だけ強くする）
+    const btn = mixHex(panel2, "#000000", 0.15);
+    root.setProperty("--btn", btn);
 
     // FullCalendarの軸や見出し文字色もこれに寄せる（イベント文字は別）
     root.setProperty("--fc-neutral-text-color", textAuto);
@@ -876,7 +883,6 @@
       },
       customButtons: {
         settings: {
-          // テキストは見せない（CSSで透明化）
           text: "settings",
           click: () => setDrawer(!$("drawer").classList.contains("open")),
         }
