@@ -249,8 +249,40 @@
     }
 
     /* ====== ツールバー全部隠す + タイトルも消す ====== */
-    .fc .fc-header-toolbar{ display:none !important; } /* prev/next/today/week/month等ぜんぶ */
-    /* タイトル行そのものが消えるので、中央タイトルも当然消える */
+    /* ヘッダーは残す（settingsだけ使う） */
+   .fc .fc-header-toolbar{
+  margin: 0 0 6px !important;
+}
+
+/* settings以外のツールバー要素は非表示（title/左ボタンなどを潰す） */
+.fc .fc-toolbar-chunk:not(:last-child){
+  display:none !important;
+}
+
+/* 右側チャンク内でも settings 以外が居たら消す（保険） */
+.fc .fc-toolbar-chunk:last-child .fc-button:not(.fc-settings-button){
+  display:none !important;
+}
+
+/* ★設定ボタンを「背景Aと同色」で目立たなくする */
+.fc .fc-settings-button{
+  background: var(--fc-page-bg-color-a) !important;
+  border-color: var(--fc-page-bg-color-a) !important;
+  color: var(--muted) !important;
+  padding: 6px 9px !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  opacity: .75;
+}
+.fc .fc-settings-button:hover{
+  opacity: .95;
+  filter:none !important;
+}
+.fc .fc-settings-button:focus{
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 
     .fc .fc-col-header-cell-cushion,
     .fc .fc-timegrid-axis-cushion,
@@ -816,7 +848,12 @@
       initialView: nav.viewMode,
 
       // ★ヘッダーは空（CSSでも隠してるが、そもそも生成しない）
-      headerToolbar: false,
+      headerToolbar: {
+  left: "",
+  center: "",
+  right: "settings",
+},
+
 
       // ★曜日などの表示言語
       locale,
