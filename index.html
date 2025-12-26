@@ -31,6 +31,9 @@
       /* 設定アイコン（SVG URLをJSで入れる） */
       --settings-icon-url: none;
 
+      /* ★追加：今日の色（hex）。中央ヘッダー文字色に使う */
+      --today-hex:#ffdc28;
+
       /* FullCalendar vars（JSで上書きされる） */
       --fc-page-bg-color:#ffffff;          /* 互換用（使わない） */
       --fc-page-bg-color-a:#0b0f14;        /* 背景A */
@@ -111,11 +114,11 @@
     .eventModalTop{
       display:flex;
       justify-content:space-between;
-      align-items:center; /* ← flex-start から変更 */
+      align-items:center;
       gap:10px;
       margin-bottom:10px;
     }
-    
+
     .eventModalClose:hover{filter:brightness(1.1);}
 
     .eventModalTime{
@@ -306,22 +309,62 @@
     .collapsibleBody.on{display:block;}
 
     /* ========= ヘッダー周り ========= */
+    /* titleは使わない（中央はカスタムで日付を出す） */
     .fc .fc-toolbar-title{ display:none !important; }
+
     .fc .fc-header-toolbar{
       margin:0 0 6px !important;
       display:flex !important;
-      justify-content:flex-end !important;
+      align-items:center !important;
     }
-    .fc .fc-toolbar-chunk:not(:last-child){ display:none !important; }
-    .fc .fc-toolbar-chunk:last-child{
-      margin-left:auto !important;
+
+    /* 左・中央・右を全部使う（今まで非表示だったチャンクを復活） */
+    .fc .fc-toolbar-chunk{
       display:flex !important;
-      justify-content:flex-end !important;
-      width:auto !important;
+      align-items:center !important;
+      gap:8px;
     }
+    /* 右チャンクの settings 以外は隠す（ついでに prev/next 等が出るのを防ぐ） */
     .fc .fc-toolbar-chunk:last-child .fc-button:not(.fc-settings-button){
       display:none !important;
     }
+
+    /* 左上：タスクカレンダー（ボタンっぽく見せない） */
+    .fc .fc-appTitle-button{
+      background:transparent !important;
+      border:none !important;
+      box-shadow:none !important;
+      padding:0 !important;
+      margin:0 !important;
+      color:var(--text) !important; /* 背景Aと反対の色（JSが --text をそうしてる） */
+      font-weight:900;
+      font-size:14px;
+      letter-spacing:.02em;
+      cursor:default !important;
+      pointer-events:none; /* クリックできなくてOK */
+      opacity:1 !important;
+    }
+    .fc .fc-appTitle-button:focus{ box-shadow:none !important; }
+
+    /* 中央：今日は何月何日です（色＝「今日の色」） */
+    .fc .fc-todayLabel-button{
+      background:transparent !important;
+      border:none !important;
+      box-shadow:none !important;
+      padding:0 !important;
+      margin:0 !important;
+      color:var(--today-hex) !important;
+      font-weight:900;
+      font-size:14px;
+      letter-spacing:.01em;
+      cursor:default !important;
+      pointer-events:none;
+      opacity:1 !important;
+      text-align:center;
+    }
+    .fc .fc-todayLabel-button:focus{ box-shadow:none !important; }
+
+    /* 右上：設定ボタン */
     .fc .fc-settings-button{
       background: var(--fc-page-bg-color-a) !important;
       border-color: var(--fc-page-bg-color-a) !important;
@@ -364,7 +407,6 @@
       margin-bottom:8px;
     }
     .drawerHeaderLeft{min-width:0;}
-
   </style>
 </head>
 
@@ -630,8 +672,8 @@
   const LS_DRAWER_KEY     = "mycalendar.drawer.open";
   const LS_ADDOPEN_KEY    = "mycalendar.add.open";
   const LS_SYSOPEN_KEY    = "mycalendar.sys.open";
-  const LS_NAVVIEWOPEN_KEY= "mycalendar.navview.open"; // ★追加
-  const LS_THEMEOPEN_KEY  = "mycalendar.theme.open";   // ★追加
+  const LS_NAVVIEWOPEN_KEY= "mycalendar.navview.open";
+  const LS_THEMEOPEN_KEY  = "mycalendar.theme.open";
 
   const PAGE_DEFAULT_NAV = { viewMode:"timeGridWeek", weekdayLang:"ja" };
   const PAGE_DEFAULT_VIEW = { slotMin: "06:00:00", slotMax: "24:00:00" };
@@ -795,6 +837,9 @@
 
     const settingsBorder = mixHex(textAuto, theme.pageBgA, 0.72);
     root.setProperty("--settings-border", settingsBorder);
+
+    /* ★追加：中央ヘッダー日付の色（hexで保持） */
+    root.setProperty("--today-hex", theme.today);
   }
 
   function makeEventSources(calendarsEffective) {
@@ -813,6 +858,7 @@
     const m = String(d.getMinutes()).padStart(2,"0");
     return `${h}:${m}`;
   }
+
   function openEventModal({ timeText, titleText, subText }){
     $("eventModalTime").textContent = timeText || "";
     $("eventModalTitle").textContent = titleText || "";
@@ -825,6 +871,26 @@
     $("eventOverlay").classList.remove("on");
     $("eventModal").classList.remove("on");
     $("eventModal").setAttribute("aria-hidden", "true");
+  }
+
+  /* ★追加：ヘッダー中央の「今日は何月何日です」更新 */
+  function setTodayHeaderText(){
+    const d = new Date();
+    if (isNaN(d.getTime())) return;
+    const text = `今日は${d.getMonth()+1}月${d.getDate()}日です`;
+    const el = document.querySelector(".fc-todayLabel-button");
+    if (el) el.textContent = text;
+  }
+
+  function scheduleMidnightHeaderRefresh(){
+    const now = new Date();
+    if (isNaN(now.getTime())) return;
+    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 2); // 00:00:02
+    const ms = Math.max(1000, next.getTime() - now.getTime());
+    setTimeout(() => {
+      setTodayHeaderText();
+      scheduleMidnightHeaderRefresh();
+    }, ms);
   }
 
   // state
@@ -957,11 +1023,19 @@
       locale,
 
       headerToolbar: {
-        left: "",
-        center: "title",
+        left: "appTitle",
+        center: "todayLabel",
         right: "settings",
       },
       customButtons: {
+        appTitle: {
+          text: "タスクカレンダー",
+          click: () => {} // クリック不要
+        },
+        todayLabel: {
+          text: "今日は--月--日です",
+          click: () => {} // クリック不要
+        },
         settings: {
           text: "settings",
           click: () => setDrawer(!$("drawer").classList.contains("open")),
@@ -1059,6 +1133,9 @@
     });
 
     calendar.render();
+
+    /* ★ヘッダー中央の日付を即反映 */
+    setTodayHeaderText();
 
     if (!resizeBound) {
       resizeBound = true;
@@ -1261,9 +1338,11 @@
     setThemeOpen(false);
     setAddOpen(false);
 
-
     const hasLS = !!localStorage.getItem(LS_OVERRIDE_KEY);
     $("statusLine").textContent += hasLS ? " / local差分あり" : " / local差分なし";
+
+    /* ★日付は日跨ぎで自動更新 */
+    scheduleMidnightHeaderRefresh();
   }
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -1335,7 +1414,11 @@
     $("tBgA").addEventListener("input", (e) => setThemeOverride("pageBgA", e.target.value));
     $("tBgB").addEventListener("input", (e) => setThemeOverride("pageBgB", e.target.value));
     $("tBorder").addEventListener("input", (e) => setThemeOverride("border", e.target.value));
-    $("tToday").addEventListener("input", (e) => setThemeOverride("today", e.target.value));
+    $("tToday").addEventListener("input", (e) => {
+      setThemeOverride("today", e.target.value);
+      /* 色変えた瞬間に、中央ヘッダーも即更新（見た目の反映用） */
+      setTodayHeaderText();
+    });
     $("tTodayAlpha").addEventListener("change", (e) => {
       const v = Number(e.target.value);
       const vv = isFinite(v) ? Math.max(0, Math.min(100, v)) : 35;
@@ -1386,6 +1469,8 @@
       const hasLS = !!localStorage.getItem(LS_OVERRIDE_KEY);
       const base = $("statusLine").textContent.split(" / ")[0];
       $("statusLine").textContent = base + (hasLS ? " / local差分あり" : " / local差分なし");
+
+      setTodayHeaderText();
     });
 
     $("btnClearOverrides").addEventListener("click", () => {
@@ -1401,6 +1486,8 @@
       const base = $("statusLine").textContent.split(" / ")[0];
       const hasLS = !!localStorage.getItem(LS_OVERRIDE_KEY);
       $("statusLine").textContent = base + (hasLS ? " / local差分あり" : " / local差分なし");
+
+      setTodayHeaderText();
     });
 
     $("btnExportShow").addEventListener("click", () => {
