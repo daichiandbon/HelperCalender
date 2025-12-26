@@ -34,6 +34,11 @@
       /* ★追加：今日の色（hex）。中央ヘッダー文字色に使う */
       --today-hex:#ffdc28;
 
+    　/* ★追加：ヘッダー左の「タスクカレンダー」ザブトン */
+      --appTitle-pill-bg: rgba(255,255,255,.10);
+      --appTitle-pill-border: rgba(255,255,255,.18);
+
+
       /* FullCalendar vars（JSで上書きされる） */
       --fc-page-bg-color:#ffffff;          /* 互換用（使わない） */
       --fc-page-bg-color-a:#0b0f14;        /* 背景A */
@@ -294,6 +299,11 @@
     .fc .fc-timegrid-slot, .fc .fc-timegrid-axis, .fc .fc-daygrid-day-frame{
       background:transparent !important;
     }
+   　/* ★30分などの補助線（minor slot）を消す */
+    .fc .fc-timegrid-slot-minor{
+      border-top-style:none !important;
+    }
+
     .fc .fc-event,
     .fc .fc-event-main,
     .fc .fc-event-selected,
@@ -329,21 +339,24 @@
       display:none !important;
     }
 
-    /* 左上：タスクカレンダー（ボタンっぽく見せない） */
+    /* 左上：タスクカレンダー（ザブトン付き） */
     .fc .fc-appTitle-button{
-      background:transparent !important;
-      border:none !important;
+      background: var(--appTitle-pill-bg) !important;
+      border: 1px solid var(--appTitle-pill-border) !important;
       box-shadow:none !important;
-      padding:0 !important;
+      padding:6px 12px !important;
       margin:0 !important;
-      color:var(--text) !important; /* 背景Aと反対の色（JSが --text をそうしてる） */
+      color:var(--text) !important;
       font-weight:900;
       font-size:14px;
       letter-spacing:.02em;
+      border-radius:999px !important;
       cursor:default !important;
-      pointer-events:none; /* クリックできなくてOK */
+      pointer-events:none;
       opacity:1 !important;
+      line-height:1;
     }
+
     .fc .fc-appTitle-button:focus{ box-shadow:none !important; }
 
     /* 中央：今日は何月何日です（色＝「今日の色」） */
@@ -840,6 +853,13 @@
 
     /* ★追加：中央ヘッダー日付の色（hexで保持） */
     root.setProperty("--today-hex", theme.today);
+
+    /* ★追加：タスクカレンダーのザブトン色（背景Aに対して反対色寄りを薄く） */
+    const pillBg = mixHex(textAuto, theme.pageBgA, 0.88);      // 薄め
+    const pillBorder = mixHex(textAuto, theme.pageBgA, 0.78);  // ちょい濃いめ
+    root.setProperty("--appTitle-pill-bg", pillBg);
+    root.setProperty("--appTitle-pill-border", pillBorder);
+
   }
 
   function makeEventSources(calendarsEffective) {
