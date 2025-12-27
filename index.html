@@ -42,6 +42,13 @@
 
       --fc-event-text-color:#ffffff;
       --fc-event-border-color:#0b0f14;
+
+      /* ★追加：今日の色（hex）。中央ヘッダー文字色に使う */
+      --today-hex:#ffdc28;
+
+      /* ★追加：ヘッダー左の「タスクカレンダー」ザブトン */
+      --appTitle-pill-bg: rgba(255,255,255,.10);
+      --appTitle-pill-border: rgba(255,255,255,.18);
     }
 
     html,body{
@@ -294,23 +301,29 @@
     .collapsibleBody{display:none; margin-top:10px;}
     .collapsibleBody.on{display:block;}
 
-    /* ========= ヘッダー周り ========= */
+    /* ========= ヘッダー周り（画像の構成に差し替え） ========= */
+    /* titleは使わない（中央はカスタムで日付を出す） */
     .fc .fc-toolbar-title{ display:none !important; }
+
     .fc .fc-header-toolbar{
       margin:0 0 6px !important;
       display:flex !important;
-      justify-content:flex-end !important;
+      align-items:center !important;
     }
-    .fc .fc-toolbar-chunk:not(:last-child){ display:none !important; }
-    .fc .fc-toolbar-chunk:last-child{
-      margin-left:auto !important;
+
+    /* 左・中央・右を全部使う */
+    .fc .fc-toolbar-chunk{
       display:flex !important;
-      justify-content:flex-end !important;
-      width:auto !important;
+      align-items:center !important;
+      gap:8px;
     }
+
+    /* 右チャンクの settings 以外は隠す（念のため） */
     .fc .fc-toolbar-chunk:last-child .fc-button:not(.fc-settings-button){
       display:none !important;
     }
+
+    /* 右：設定ボタン（既存） */
     .fc .fc-settings-button{
       background: var(--fc-page-bg-color-a) !important;
       border-color: var(--fc-page-bg-color-a) !important;
@@ -343,6 +356,43 @@
       pointer-events:none;
       filter: var(--settings-icon-filter, none);
     }
+
+    /* 左：タスクカレンダー（ザブトン付き） */
+    .fc .fc-appTitle-button{
+      background: var(--appTitle-pill-bg) !important;
+      border: 1px solid var(--appTitle-pill-border) !important;
+      box-shadow:none !important;
+      padding:6px 12px !important;
+      margin:0 !important;
+      color:var(--text) !important;
+      font-weight:900;
+      font-size:14px;
+      letter-spacing:.02em;
+      border-radius:999px !important;
+      cursor:default !important;
+      pointer-events:none; /* クリック無効 */
+      opacity:1 !important;
+      line-height:1;
+    }
+
+    /* 中央：今日は何月何日です（色＝今日の色） */
+    .fc .fc-todayLabel-button{
+      background:transparent !important;
+      border:none !important;
+      box-shadow:none !important;
+      padding:0 !important;
+      margin:0 !important;
+      color:var(--today-hex) !important;
+      font-weight:900;
+      font-size:14px;
+      letter-spacing:.01em;
+      cursor:default !important;
+      pointer-events:none; /* クリック無効 */
+      opacity:1 !important;
+      text-align:center;
+      line-height:1;
+    }
+    .fc .fc-todayLabel-button:focus{ box-shadow:none !important; }
 
     .drawerHeader{
       display:flex;
@@ -822,12 +872,19 @@
 
     const settingsBorder = mixHex(textAuto, theme.pageBgA, 0.72);
     root.setProperty("--settings-border", settingsBorder);
+
+    /* ★追加：中央ヘッダー日付の色（hexで保持） */
+    root.setProperty("--today-hex", theme.today);
+
+    /* ★追加：タスクカレンダーのザブトン色（背景Aに対して反対寄りを薄く） */
+    const pillBg     = mixHex(textAuto, theme.pageBgA, 0.92);
+    const pillBorder = mixHex(textAuto, theme.pageBgA, 0.92);
+    root.setProperty("--appTitle-pill-bg", pillBg);
+    root.setProperty("--appTitle-pill-border", pillBorder);
   }
 
   // =======================
   // ★ID/ICS 自動判定
-  // - key が http(s):// なら ICS
-  // - それ以外は Google Calendar ID
   // =======================
   function looksLikeIcsKey(key){
     return /^https?:\/\//i.test(String(key||"").trim());
@@ -857,7 +914,6 @@
       }
     }
 
-    // ID方式なのにAPIキー無しだと確実に死ぬので、分かりやすく警告用フラグを返す
     const hasGcal = sources.some(s => "googleCalendarId" in s);
     const gcalOk = !!String(googleApiKey||"").trim();
 
@@ -884,12 +940,32 @@
     $("eventModal").setAttribute("aria-hidden", "true");
   }
 
+  /* ★追加：ヘッダー中央の「今日は◯月◯日です」更新 */
+  function setTodayHeaderText(){
+    const d = new Date();
+    if (isNaN(d.getTime())) return;
+    const text = `今日は${(d.getMonth()+1)}月${d.getDate()}日です`;
+    const el = document.querySelector(".fc-todayLabel-button");
+    if (el) el.textContent = text;
+  }
+  function scheduleMidnightHeaderRefresh(){
+    const now = new Date();
+    if (isNaN(now.getTime())) return;
+    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 2); // 00:00:02
+    const ms = Math.max(1000, next.getTime() - now.getTime());
+    setTimeout(() => {
+      setTodayHeaderText();
+      scheduleMidnightHeaderRefresh();
+    }, ms);
+  }
+
   // state
   let baseConfig = { theme: clone(PAGE_DEFAULT_THEME), view: clone(PAGE_DEFAULT_VIEW), nav: clone(PAGE_DEFAULT_NAV), calendars: {}, googleApiKey: "" };
   let overrides  = { theme: {}, view: {}, nav: {}, calendars: {}, googleApiKey: "" };
   let effective  = { theme: clone(PAGE_DEFAULT_THEME), view: clone(PAGE_DEFAULT_VIEW), nav: clone(PAGE_DEFAULT_NAV), calendars: {}, googleApiKey: "" };
   let calendar = null;
   let resizeBound = false;
+  let midnightBound = false;
 
   function loadOverridesFromLS() {
     try {
@@ -1015,34 +1091,32 @@
     const locale = (effective.nav.weekdayLang === "ja") ? "ja" : "en";
     const { sources, hasGcal, gcalOk } = makeEventSources(effective.calendars, effective.googleApiKey);
 
-    // ステータス補足
-    const baseStatus = $("statusLine").textContent.split(" / ")[0];
-    const parts = [baseStatus];
-
-    if (hasGcal && !gcalOk) parts.push("★Google API Key未設定（ID方式は失敗する）");
-    if (ICS_PROXY_BASE.includes("YOUR-WORKER")) parts.push("★ICS_PROXY_BASE未設定");
-
-    // 初期化直後は statusLine がまだ変動するので、ここで上書きしない
-    // → initAll() でまとめて出す
-
     calendar = new FullCalendar.Calendar(el, {
       firstDay: 1,
       initialView: effective.nav.viewMode,
       locale,
 
+      /* ★ヘッダー構成を差し替え（左/中央/右） */
       headerToolbar: {
-        left: "",
-        center: "title",
+        left: "appTitle",
+        center: "todayLabel",
         right: "settings",
       },
       customButtons: {
+        appTitle: {
+          text: "タスクカレンダー",
+          click: () => {} // pointer-events:none なので基本押せない
+        },
+        todayLabel: {
+          text: "",        // 後で setTodayHeaderText() で入れる
+          click: () => {}  // pointer-events:none
+        },
         settings: {
           text: "settings",
           click: () => setDrawer(!$("drawer").classList.contains("open")),
         }
       },
 
-      // ★Google Calendar ID 方式のAPIキー
       googleCalendarApiKey: effective.googleApiKey || "",
 
       nowIndicator: true,
@@ -1055,7 +1129,7 @@
       eventSources: sources,
 
       eventDidMount: (info) => {
-        const srcId = info.event.source?.id; // = calendars key
+        const srcId = info.event.source?.id;
         const cfg = effective.calendars?.[srcId];
         if (!cfg) return;
 
@@ -1095,7 +1169,7 @@
         info.jsEvent.preventDefault();
         info.jsEvent.stopPropagation();
 
-        const srcId = info.event.source?.id; // = calendars key
+        const srcId = info.event.source?.id;
         const cfg = effective.calendars?.[srcId] || {};
 
         const titleText = (cfg.showTitle === false)
@@ -1131,8 +1205,6 @@
 
       eventSourceFailure: async (err) => {
         console.error("EventSource failed:", err);
-
-        // FullCalendarのエラー構造はソースでバラつくので、可能な範囲で拾う
         try {
           const st = err?.response?.status;
           const u = err?.response?.url;
@@ -1154,6 +1226,13 @@
     });
 
     calendar.render();
+
+    /* ★中央ヘッダー文字を入れる（render後じゃないとボタンDOMが無い） */
+    setTodayHeaderText();
+    if (!midnightBound) {
+      midnightBound = true;
+      scheduleMidnightHeaderRefresh();
+    }
 
     if (!resizeBound) {
       resizeBound = true;
@@ -1378,7 +1457,6 @@
     setThemeOpen(false);
     setAddOpen(false);
 
-    // status整形（起動時まとめ）
     recomputeEffective();
     const { hasGcal, gcalOk } = makeEventSources(effective.calendars, effective.googleApiKey);
     const parts = [];
@@ -1469,10 +1547,8 @@
       renderCalendarList();
     });
 
-    // Google API Key
     $("googleApiKey").addEventListener("change", (e) => setGoogleApiKeyOverride(e.target.value));
 
-    // 追加UIのラベル切替（見た目だけ）
     $("newType").addEventListener("change", () => {
       const t = $("newType").value;
       $("newIdLabel").textContent = (t === "ics") ? "ICS URL" : (t === "gcal") ? "Google Calendar ID" : "Calendar ID / ICS URL";
@@ -1521,7 +1597,7 @@
       syncSysUI();
       renderCalendarList();
 
-      initAll(); // statusも含めて整える
+      initAll();
     });
 
     $("btnClearOverrides").addEventListener("click", () => {
