@@ -34,6 +34,21 @@
       "showTime": true,
       "color": "#62b7a9",
       "label": "予定あり"
+    },
+    "bonbonbon0105@gmail.com": {
+      "visible": true,
+      "showTitle": false,
+      "showTime": true,
+      "color": "#a2a6ae",
+      "label": "予定あり"
+    },
+    "https://calendar.google.com/calendar/ical/sugimoto%40shirogumi.co.jp/private-a138425d377ced366ccb535a46728979/basic.ics": {
+      "visible": true,
+      "showTitle": false,
+      "showTime": true,
+      "color": "#a2a6ae",
+      "label": "予定あり"
     }
-  }
+  },
+  "googleApiKey": "AIzaSyDZdH26P0tSEBRNnEa4rE9As7rcd924QJ4"
 }
